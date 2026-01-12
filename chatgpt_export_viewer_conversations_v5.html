@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ChatGPT Export Viewer — lite v5</title>
+<style>
+html,body{height:100%;overflow:hidden}
+:root{--bg:#0c0d0e;--fg:#e6e8eb;--muted:#858b93;--line:#1f2329;--panel:#121417;--accent:#7aa2ff}
+*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Inter,Helvetica Neue,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--fg);height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:var(--panel);border-bottom:1px solid var(--line)}
+header input[type="text"],header select{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.45rem .55rem;border-radius:.4rem;font-size:.85rem}
+main{display:grid;grid-template-columns:320px 1fr;flex:1 1 auto;min-height:0;overflow:hidden}
+#list{overflow-y:auto;border-right:1px solid var(--line)}
+#pane{overflow-y:auto;padding:1rem 1.25rem}
+.conv{padding:.7rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}
+.conv:hover{background:#0f1115}
+.conv .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.conv .meta{font-size:.75rem;color:var(--muted);display:flex;gap:.6rem;flex-wrap:wrap}
+.msg{border:1px solid var(--line);border-radius:.7rem;margin:1rem 0;overflow:hidden;background:#0d0f12}
+.msg .hdr{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;background:#0f1216;border-bottom:1px solid var(--line)}
+.role{font-weight:700;font-size:.8rem;padding:.15rem .45rem;border:1px solid var(--line);border-radius:.4rem;color:#b8c0cc}
+.role.user{color:#8ff9c8}.role.assistant{color:#c5d2ff}.role.system{color:#ffd68a}
+.time{margin-left:auto;color:var(--muted);font-size:.8rem}
+.model{font-size:.7rem;color:var(--muted);border-left:1px solid var(--line);padding-left:.5rem}
+.msg .body{padding:.9rem 1rem;white-space:pre-wrap;line-height:1.42}
+pre{white-space:pre-wrap;overflow-x:auto;background:#101216;padding:.6rem;border-radius:.4rem;border:1px solid var(--line);font-size:.8rem;color:#d4d8dd}
+.empty,.hint{color:var(--muted);padding:1rem}
+.badge{display:inline-flex;align-items:center;gap:.3rem;background:#10141a;border:1px solid var(--line);border-radius:.4rem;padding:.15rem .4rem;font-size:.75rem;color:#b6bdc6;margin-right:.5rem;cursor:pointer}
+footer{display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(12,13,14,0),#0c0d0e 40%);flex:0 0 auto;flex-wrap:wrap}
+.collapsed{max-height:8.5rem;overflow:hidden;position:relative}
+.collapsed::after{content:"show more";position:absolute;bottom:0;left:0;width:100%;text-align:center;background:linear-gradient(0deg,var(--bg) 10%,transparent);padding:.4rem 0;font-size:.75rem;color:var(--accent);cursor:pointer}
+
+.cid{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: .15rem;
+  word-break: break-all;
+}
+.mid{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: .7rem;
+  color: var(--muted);
+  padding: .05rem .35rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+}
+
+</style>
+</head>
+<body>
+<header>
+  <label class="badge"><input id="file" type="file" accept="application/json" style="display:none">load json</label>
+  <input id="search" type="text" placeholder="search…" style="flex:1;min-width:160px">
+  <label class="badge"><input type="checkbox" id="word">whole word</label>
+  <select id="sort">
+    <option value="udesc">updated ↓</option>
+    <option value="uasc">updated ↑</option>
+    <option value="cdesc">created ↓</option>
+    <option value="casc">created ↑</option>
+  </select>
+  <span id="status" class="hint"></span>
+</header>
+<main>
+  <div id="list"></div>
+  <div id="pane" class="hint">drop conversations.json here</div>
+</main>
+<footer>
+  <label class="badge"><input type="checkbox" id="sys" checked>system</label>
+  <label class="badge"><input type="checkbox" id="tool" checked>tool/fn</label>
+  <label class="badge"><input type="checkbox" id="reason" checked>reason</label>
+  <label class="badge"><input type="checkbox" id="code" checked>code</label>
+  <label class="badge"><input type="checkbox" id="hide" checked>hide empty</label>
+</footer>
+<script>
+(()=>{
+  const $=s=>document.querySelector(s);
+  const list=$('#list'),pane=$('#pane'),status=$('#status'),searchBox=$('#search'),sortSel=$('#sort'),wordChk=$('#word');
+  const filters={sys:true,tool:true,reason:true,code:true,hide:true,word:false};
+  let store=[],current=null,searchTerm='';
+  const set=t=>status.textContent=t||'';
+  const fmt=t=>{if(!t)return'';const d=new Date(typeof t==='number'?t*1000:t);return d.toISOString().slice(0,19).replace('T',' ');};// yyyy-mm-dd hh:mm:ss
+  const role=m=>m.author?.role||m.role||'assistant';
+  const model=m=>m.metadata?.model_slug||m.metadata?.model||'';
+  const escapeHtml=s=>String(s??'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+  const bodyText=c=>{if(!c)return'';if(typeof c==='string')return c;if(Array.isArray(c))return c.map(bodyText).join('\n');if(c.content_type){switch(c.content_type){case'text':return bodyText(c.parts||c.text);case'user_editable_context':return (c.user_profile||'')+'\n'+(c.user_instructions||'');case'tether_quote':return (c.title||'')+' '+(c.text||'');case'thoughts':return (c.thoughts||[]).map(t=>t.summary+' '+t.content).join('\n');case'reasoning_recap':return c.content||'';case'code':return c.text||'';case'multimodal_text':return c.parts?.map(p=>p.content_type==='audio_transcription'?p.text:(typeof p==='string'?p:'')).filter(Boolean).join('\n');default:return JSON.stringify(c)}}if(c.parts)return bodyText(c.parts);return JSON.stringify(c)};
+  const renderBody=c=>{if(!c)return'';if(c.content_type==='code'){if(!filters.code)return'';const txt=c.text||'';const large=txt.length>600;return `<pre class="${large?'collapsed ':''}">${escapeHtml(txt)}</pre>`;}if(c.content_type==='multimodal_text'){const audible=c.parts?.find(p=>p.content_type==='audio_transcription');return audible?escapeHtml(audible.text):'[multimodal]';}return escapeHtml(bodyText(c));};
+  const collect=r=>Array.isArray(r.messages)?r.messages.sort((a,b)=>a.create_time-b.create_time):r.mapping?Object.values(r.mapping).filter(n=>n.message).map(n=>({...n.message})).sort((a,b)=>a.create_time-b.create_time):[];
+  const norm=r=>{const msgs=collect(r);return{id:r.id||r.conversation_id||crypto.randomUUID(),title:r.title||'(untitled)',update:r.update_time||msgs.slice(-1)[0]?.create_time,create:r.create_time||msgs[0]?.create_time,msg:msgs};};
+  const load=obj=>{store=(Array.isArray(obj)?obj:obj.conversations||obj.items||[]).map(norm);set(store.length+' chats');renderList();pane.textContent='pick →';};
+  const allowed=m=>{const r=role(m);if(!filters.sys&&r==='system')return false;if(!filters.tool&&(r==='tool'||r==='function'))return false;const ct=m.content?.content_type;if(!filters.reason&&(ct==='thoughts'||ct==='reasoning_recap'))return false;if(!filters.code&&ct==='code')return false;const body=bodyText(m.content).trim();if(filters.hide&&!body)return false;return true;};
+  const open=c=>{current=c;pane.innerHTML='';c.msg.filter(allowed).forEach(m=>{const art=document.createElement('div');art.className='msg';art.innerHTML=`<div class="hdr"><span class="role ${role(m)}">${role(m)}</span>${model(m)?`<span class="model">${model(m)}</span>`:''}${m.id?`<span class="mid">${m.id}</span>`:''}<span class="time">${fmt(m.create_time)}</span></div><div class="body">${renderBody(m.content)}</div>`;pane.appendChild(art);});if(!pane.innerHTML)pane.textContent='(all filtered)';pane.dataset.id=c.id;};
+  const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const matches=(hay,q)=>{if(!hay)return false;return filters.word?new RegExp('\\b'+escapeRe(q)+'\\b','i').test(hay):hay.includes(q);};
+  const renderList=()=>{list.innerHTML='';let filtered=store;const q=searchTerm.toLowerCase().trim();if(q){filtered=filtered.filter(c=>{if(matches(c.title.toLowerCase(),q))return true;return c.msg.some(m=>matches(bodyText(m.content).toLowerCase(),q));});}
+    filtered.sort((a,b)=>{switch(sortSel.value){case'cdesc':return b.create-a.create;case'casc':return a.create-b.create;case'uasc':return a.update-b.update;default:return b.update-a.update;}});
+    filtered.forEach(c=>{const div=document.createElement('div');div.className='conv';div.innerHTML=`<div class="title">${escapeHtml(c.title)}</div><div class="cid">${c.id}</div><div class="meta"><span>upd ${fmt(c.update)}</span><span>cre ${fmt(c.create)}</span></div>`;div.onclick=()=>open(c);list.appendChild(div);});if(!filtered.length)list.innerHTML='<div class="empty">no match</div>';};
+  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>load(JSON.parse(t))).catch(()=>set('parse err'));};
+  document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(!f)return;f.text().then(t=>load(JSON.parse(t))).catch(()=>set('parse err'));});
+  ['sys','tool','reason','code','hide'].forEach(id=>$('#'+id).onchange=e=>{filters[id]=e.target.checked;if(current)open(current);} );
+  wordChk.onchange=e=>{filters.word=e.target.checked;renderList();};
+  searchBox.oninput=e=>{searchTerm=e.target.value.toLowerCase();renderList();};
+  sortSel.onchange=renderList;
+  document.addEventListener('click',e=>{if(e.target.classList.contains('collapsed'))e.target.classList.remove('collapsed');},false);
+})();
+</script>
+</body>
+</html>
