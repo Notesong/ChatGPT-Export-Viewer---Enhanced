@@ -3,68 +3,179 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ChatGPT Export Viewer — lite v5</title>
+<meta name="author" content="Codex (GPT-5)"/>
+<title>ChatGPT Export Viewer - Enhanced</title>
 <style>
 html,body{height:100%;overflow:hidden}
 :root{--bg:#0c0d0e;--fg:#e6e8eb;--muted:#858b93;--line:#1f2329;--panel:#121417;--accent:#7aa2ff}
 *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Inter,Helvetica Neue,Arial,sans-serif}
 body{margin:0;background:var(--bg);color:var(--fg);height:100vh;display:flex;flex-direction:column}
-header{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:var(--panel);border-bottom:1px solid var(--line)}
+body.footerhidden footer{display:none}
+body.focusmode #list{display:none}
+body.focusmode #splitter{display:none}
+body.focusmode main{grid-template-columns:1fr}
+header{display:flex;flex-direction:column;align-items:stretch;gap:.55rem;padding:.7rem 1rem;background:var(--panel);border-bottom:1px solid var(--line)}
+header .row{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+header .adv{display:none}
+header .adv.open{display:flex}
+header .advline{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;flex:1 0 100%}
+header .advright{margin-left:auto;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+header .dateblock{display:inline-flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:#0d0f12;border:1px solid var(--line);border-radius:.5rem;padding:.3rem .45rem}
+header .dateblock .hint{padding:0}
+header .tagmgrpanel{display:none;border:1px solid var(--line);border-radius:.55rem;background:#0f1216;padding:.45rem .55rem}
+header .tagmgrpanel.open{display:flex}
+header .tagmgrpanel select,header .tagmgrpanel input{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.35rem .45rem;border-radius:.4rem;font-size:.78rem}
+header .tagmgrpanel select{min-width:190px}
+header .tagmgrpanel input{min-width:180px}
+header .hidden{display:none!important}
 header input[type="text"],header select{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.45rem .55rem;border-radius:.4rem;font-size:.85rem}
-main{display:grid;grid-template-columns:320px 1fr;flex:1 1 auto;min-height:0;overflow:hidden}
-#list{overflow-y:auto;border-right:1px solid var(--line)}
+header select[multiple]{min-height:5.2rem;min-width:220px;padding:.2rem .3rem;font-size:.78rem}
+header input[type="date"]{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.35rem .45rem;border-radius:.4rem;font-size:.78rem}
+header input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.9;cursor:pointer}
+.navbtn{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.4rem .55rem;border-radius:.4rem;font-size:.8rem;cursor:pointer}
+.navbtn:disabled{opacity:.45;cursor:not-allowed}
+.navbtn.active{border-color:var(--accent);color:#d6e3ff}
+main{display:grid;grid-template-columns:var(--listw,320px) 8px 1fr;flex:1 1 auto;min-height:0;overflow:hidden}
+#list{overflow-y:auto}
+#listtools{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;padding:.45rem .55rem;background:var(--panel);border-bottom:1px solid var(--line)}
+#listtools select{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.3rem .45rem;border-radius:.4rem;font-size:.78rem;max-width:180px}
+#splitter{cursor:col-resize;background:#0f1216;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+#splitter:hover{background:#131826}
+#listitems .empty{padding:.8rem}
 #pane{overflow-y:auto;padding:1rem 1.25rem}
+#list,#pane,pre,#tagmulti,#tagpick,#tagmgrsrc,#tagmgrdst{scrollbar-width:thin;scrollbar-color:#35507f #0f1216}
+#list::-webkit-scrollbar,#pane::-webkit-scrollbar,pre::-webkit-scrollbar,#tagmulti::-webkit-scrollbar,#tagpick::-webkit-scrollbar,#tagmgrsrc::-webkit-scrollbar,#tagmgrdst::-webkit-scrollbar{width:10px;height:10px}
+#list::-webkit-scrollbar-track,#pane::-webkit-scrollbar-track,pre::-webkit-scrollbar-track,#tagmulti::-webkit-scrollbar-track,#tagpick::-webkit-scrollbar-track,#tagmgrsrc::-webkit-scrollbar-track,#tagmgrdst::-webkit-scrollbar-track{background:#0f1216}
+#list::-webkit-scrollbar-thumb,#pane::-webkit-scrollbar-thumb,pre::-webkit-scrollbar-thumb,#tagmulti::-webkit-scrollbar-thumb,#tagpick::-webkit-scrollbar-thumb,#tagmgrsrc::-webkit-scrollbar-thumb,#tagmgrdst::-webkit-scrollbar-thumb{background:#35507f;border-radius:8px;border:2px solid #0f1216}
+#list::-webkit-scrollbar-thumb:hover,#pane::-webkit-scrollbar-thumb:hover,pre::-webkit-scrollbar-thumb:hover,#tagmulti::-webkit-scrollbar-thumb:hover,#tagpick::-webkit-scrollbar-thumb:hover,#tagmgrsrc::-webkit-scrollbar-thumb:hover,#tagmgrdst::-webkit-scrollbar-thumb:hover{background:#4f73b5}
 .conv{padding:.7rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}
 .conv:hover{background:#0f1115}
+.conv.active{background:#152033;box-shadow:inset 3px 0 0 var(--accent)}
+.conv .row{display:flex;align-items:center;gap:.45rem}
 .conv .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .conv .meta{font-size:.75rem;color:var(--muted);display:flex;gap:.6rem;flex-wrap:wrap}
+.conv .mlist{font-size:.72rem;color:#aeb6c1;margin-top:.35rem;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.conv .tlist{font-size:.72rem;color:#d6c79b;margin-top:.3rem;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.conv .mlist .ibtn,.conv .tlist .ibtn{padding:.08rem .33rem;font-size:.68rem}
+.favbtn{background:#0d0f12;border:1px solid var(--line);color:#9aa3b3;padding:.05rem .35rem;border-radius:.35rem;font-size:.82rem;cursor:pointer;line-height:1.1}
+.favbtn.on{color:#ffd26e;border-color:#6e5a27;background:#1b1610}
+.convfind{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:#0f1216;border:1px solid var(--line);border-radius:.55rem;padding:.45rem .55rem;margin:0 0 .7rem}
+.convfind input[type="text"]{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.35rem .5rem;border-radius:.4rem;font-size:.82rem;min-width:170px}
+.convfind .badge{margin-right:0}
+.cfindhidden{position:sticky;top:3rem;z-index:3;background:#11141a;border:1px dashed var(--line);border-radius:.5rem;padding:.45rem .55rem;margin:0 0 .7rem;font-size:.74rem;color:#b8c0cd;white-space:pre-wrap;max-height:44vh;overflow:auto}
+.panehead{border:1px solid var(--line);border-radius:.7rem;background:#0f1216;padding:.75rem .9rem;margin:.2rem 0 1rem}
+.panehead .ptitle{font-size:1rem;font-weight:700;line-height:1.25}
+.panehead .pmeta{font-size:.75rem;color:var(--muted);margin-top:.35rem;display:flex;gap:.65rem;flex-wrap:wrap}
+.panehead .pmodels{font-size:.78rem;color:#aeb6c1;margin-top:.45rem;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.panehead .pactions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.55rem}
+.panehead .pactions select{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.22rem .45rem;border-radius:.38rem;font-size:.72rem}
+.panehead .ptags{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}
+.panehead .ptags input{background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.28rem .45rem;border-radius:.35rem;font-size:.74rem;min-width:130px}
+.panehead .pnotes{margin-top:.55rem}
+.panehead .pnotes textarea{width:100%;min-height:54px;resize:vertical;background:#0d0f12;border:1px solid var(--line);color:var(--fg);padding:.45rem .55rem;border-radius:.45rem;font-size:.78rem;line-height:1.3}
+.tchip{display:inline-flex;align-items:center;gap:.3rem;background:#151a22;border:1px solid var(--line);border-radius:.35rem;padding:.14rem .38rem;font-size:.72rem;color:#c3cbda}
+.tchip button{all:unset;cursor:pointer;color:#8f98a8;font-size:.78rem;line-height:1}
 .msg{border:1px solid var(--line);border-radius:.7rem;margin:1rem 0;overflow:hidden;background:#0d0f12}
 .msg .hdr{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;background:#0f1216;border-bottom:1px solid var(--line)}
 .role{font-weight:700;font-size:.8rem;padding:.15rem .45rem;border:1px solid var(--line);border-radius:.4rem;color:#b8c0cc}
 .role.user{color:#8ff9c8}.role.assistant{color:#c5d2ff}.role.system{color:#ffd68a}
 .time{margin-left:auto;color:var(--muted);font-size:.8rem}
-.model{font-size:.7rem;color:var(--muted);border-left:1px solid var(--line);padding-left:.5rem}
+.mchip{display:inline-flex;align-items:center;font-size:.7rem;padding:.13rem .42rem;border-radius:.45rem;border:1px solid hsl(var(--mh) 40% 32%);background:hsl(var(--mh) 42% 14%);color:hsl(var(--mh) 80% 80%)}
 .msg .body{padding:.9rem 1rem;white-space:pre-wrap;line-height:1.42}
 pre{white-space:pre-wrap;overflow-x:auto;background:#101216;padding:.6rem;border-radius:.4rem;border:1px solid var(--line);font-size:.8rem;color:#d4d8dd}
 .empty,.hint{color:var(--muted);padding:1rem}
 .badge{display:inline-flex;align-items:center;gap:.3rem;background:#10141a;border:1px solid var(--line);border-radius:.4rem;padding:.15rem .4rem;font-size:.75rem;color:#b6bdc6;margin-right:.5rem;cursor:pointer}
+.badge input[type="checkbox"]{accent-color:var(--accent)}
+.ibtn{background:#0d0f12;border:1px solid var(--line);color:#c2c9d4;padding:.18rem .45rem;border-radius:.38rem;font-size:.72rem;cursor:pointer}
 footer{display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(12,13,14,0),#0c0d0e 40%);flex:0 0 auto;flex-wrap:wrap}
 .collapsed{max-height:8.5rem;overflow:hidden;position:relative}
 .collapsed::after{content:"show more";position:absolute;bottom:0;left:0;width:100%;text-align:center;background:linear-gradient(0deg,var(--bg) 10%,transparent);padding:.4rem 0;font-size:.75rem;color:var(--accent);cursor:pointer}
-
-.cid{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: .7rem;
-  color: var(--muted);
-  margin-top: .15rem;
-  word-break: break-all;
-}
-.mid{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: .7rem;
-  color: var(--muted);
-  padding: .05rem .35rem;
-  border: 1px solid var(--line);
-  border-radius: .4rem;
-}
-
+.compact{padding:.55rem .8rem;border:1px dashed var(--line);border-radius:.6rem;margin:.75rem 0;color:var(--muted);font-size:.8rem;background:#0f1115}
+.models{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.models .title{font-size:.75rem;color:var(--muted);margin-right:.2rem}
+.cid{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:.7rem;color:var(--muted);margin-top:.15rem;word-break:break-all}
+.mid{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:.7rem;color:var(--muted);padding:.05rem .35rem;border:1px solid var(--line);border-radius:.4rem}
+mark.cfind{background:#ffe39a;color:#1e1e1e;border-radius:.2rem;padding:0 .06rem}
+mark.cfind.active{background:#ffbf3a}
 </style>
 </head>
 <body>
 <header>
-  <label class="badge"><input id="file" type="file" accept="application/json" style="display:none">load json</label>
-  <input id="search" type="text" placeholder="search…" style="flex:1;min-width:160px">
-  <label class="badge"><input type="checkbox" id="word">whole word</label>
-  <select id="sort">
-    <option value="udesc">updated ↓</option>
-    <option value="uasc">updated ↑</option>
-    <option value="cdesc">created ↓</option>
-    <option value="casc">created ↑</option>
-  </select>
-  <span id="status" class="hint"></span>
+  <div class="row">
+    <label class="badge"><input id="file" type="file" accept="application/json" style="display:none">load json</label>
+    <input id="datafile" type="file" accept="application/json" style="display:none">
+    <input id="search" type="text" placeholder="search... (m/model, t/tag)" list="searchhints" style="flex:1;min-width:220px">
+    <button id="clearviewtop" class="navbtn" type="button" title="clear search/tag/date/favorites filters">clear filters</button>
+    <datalist id="searchhints"></datalist>
+    <button id="prev" class="navbtn" type="button" title="previous (k / ArrowUp)">prev</button>
+    <button id="next" class="navbtn" type="button" title="next (j / ArrowDown)">next</button>
+    <button id="focus" class="navbtn" type="button" title="hide/show conversation list">focus</button>
+    <button id="ftoggle" class="navbtn" type="button" title="show/hide conversation-level message filters">hide conversational filters</button>
+    <button id="more" class="navbtn" type="button" title="show/hide extra controls">☰</button>
+    <span id="pos" class="hint"></span>
+    <span id="status" class="hint"></span>
+  </div>
+  <div id="adv" class="row adv">
+    <div class="advline">
+      <label class="badge"><input type="checkbox" id="word">whole word</label>
+      <label class="badge"><input type="checkbox" id="titleonly">title</label>
+      <label class="badge"><input type="checkbox" id="rawtool">raw tool text</label>
+      <span class="dateblock">
+        <span class="hint">date search:</span>
+        <select id="datefield" title="date field">
+          <option value="update">updated</option>
+          <option value="create">created</option>
+        </select>
+        <input id="datefrom" type="date" title="date from">
+        <input id="dateto" type="date" title="date to">
+      </span>
+      <div class="advright">
+        <button id="tagmgrtoggle" class="navbtn" type="button" title="show/hide advanced tag management">tag manager</button>
+        <button id="dataexp" class="navbtn" type="button" title="export settings/tags/notes/favorites">export data</button>
+        <button id="dataimp" class="navbtn" type="button" title="import settings/tags/notes/favorites">import data</button>
+      </div>
+    </div>
+    <div id="tagline" class="advline">
+      <span class="hint" style="padding:0">tag filters:</span>
+      <select id="tagmode" title="tag filter mode"><option value="any">any</option><option value="all">all</option><option value="only">only</option></select>
+      <select id="tagmulti" title="multi tag filter" multiple></select>
+    </div>
+    <div id="tagmgr" class="advline tagmgrpanel">
+      <div class="advline">
+        <span class="hint" style="padding:0">bulk tag editor:</span>
+        <input id="bulktag" type="text" placeholder="bulk tag" maxlength="20">
+        <button id="bulkadd" class="navbtn" type="button" title="add tag to current filtered results">add tag to filtered</button>
+        <button id="bulkrem" class="navbtn" type="button" title="remove tag from current filtered results">remove tag from filtered</button>
+        <button id="clearview" class="navbtn" type="button" title="clear search/tag/date/favorites filters">clear filters</button>
+      </div>
+      <div class="advline">
+        <span class="hint" style="padding:0">advanced tag manager:</span>
+        <select id="tagmgrsrc" title="source tag"></select>
+        <input id="tagmgrrename" type="text" placeholder="rename to..." maxlength="20">
+        <button id="tagmgrrenamebtn" class="navbtn" type="button" title="rename selected tag everywhere">rename</button>
+        <select id="tagmgrdst" title="merge target tag"></select>
+        <button id="tagmgrmergebtn" class="navbtn" type="button" title="merge selected tag into target tag">merge -></button>
+        <button id="tagmgrdelbtn" class="navbtn" type="button" title="delete selected tag everywhere">delete</button>
+        <span id="tagmgrmeta" class="hint"></span>
+      </div>
+    </div>
+  </div>
 </header>
 <main>
-  <div id="list"></div>
+  <div id="list">
+    <div id="listtools">
+      <label class="badge"><input type="checkbox" id="onlyfav">favorites</label>
+      <select id="tagpick" title="tag filter"><option value="">all tags</option></select>
+      <select id="sort" title="sort conversation list">
+        <option value="udesc">updated ↓</option>
+        <option value="uasc">updated ↑</option>
+        <option value="cdesc">created ↓</option>
+        <option value="casc">created ↑</option>
+      </select>
+    </div>
+    <div id="listitems"></div>
+  </div>
+  <div id="splitter" title="drag to resize left panel"></div>
   <div id="pane" class="hint">drop conversations.json here</div>
 </main>
 <footer>
@@ -73,37 +184,1168 @@ footer{display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-top:1
   <label class="badge"><input type="checkbox" id="reason" checked>reason</label>
   <label class="badge"><input type="checkbox" id="code" checked>code</label>
   <label class="badge"><input type="checkbox" id="hide" checked>hide empty</label>
+  <label class="badge"><input type="checkbox" id="hideprompts">hide linked prompts</label>
+  <label class="badge"><input type="checkbox" id="compact" checked>compact hidden</label>
+  <div id="models" class="models"><span class="title">models</span></div>
 </footer>
 <script>
 (()=>{
   const $=s=>document.querySelector(s);
-  const list=$('#list'),pane=$('#pane'),status=$('#status'),searchBox=$('#search'),sortSel=$('#sort'),wordChk=$('#word');
-  const filters={sys:true,tool:true,reason:true,code:true,hide:true,word:false};
+  const main=$('main'),list=$('#list'),listItems=$('#listitems'),splitter=$('#splitter'),pane=$('#pane'),status=$('#status'),searchBox=$('#search'),sortSel=$('#sort'),wordChk=$('#word'),titleOnlyChk=$('#titleonly'),modelsBox=$('#models');
+  const searchHints=$('#searchhints');
+  const dataFile=$('#datafile'),dataExpBtn=$('#dataexp'),dataImpBtn=$('#dataimp');
+  const rawToolChk=$('#rawtool');
+  const tagPick=$('#tagpick');
+  const tagLine=$('#tagline');
+  const tagModeSel=$('#tagmode'),tagMultiSel=$('#tagmulti'),bulkTagInp=$('#bulktag'),bulkAddBtn=$('#bulkadd'),bulkRemBtn=$('#bulkrem');
+  const tagMgr=$('#tagmgr'),tagMgrToggleBtn=$('#tagmgrtoggle'),tagMgrSrcSel=$('#tagmgrsrc'),tagMgrRenameInp=$('#tagmgrrename'),tagMgrRenameBtn=$('#tagmgrrenamebtn'),tagMgrDstSel=$('#tagmgrdst'),tagMgrMergeBtn=$('#tagmgrmergebtn'),tagMgrDelBtn=$('#tagmgrdelbtn'),tagMgrMeta=$('#tagmgrmeta');
+  const prevBtn=$('#prev'),nextBtn=$('#next'),clearViewBtn=$('#clearview'),clearViewTopBtn=$('#clearviewtop'),pos=$('#pos'),footerToggle=$('#ftoggle');
+  const onlyFavChk=$('#onlyfav'),dateFieldSel=$('#datefield'),dateFromInp=$('#datefrom'),dateToInp=$('#dateto');
+  const focusBtn=$('#focus');
+  const moreBtn=$('#more'),advRow=$('#adv');
+  const STORAGE_KEY='chatgpt_export_viewer_settings_v1';
+  const CACHE_DB='chatgpt_export_cache_v1',CACHE_STORE='kv',CACHE_KEY='last_json';
+  const TAG_MAX=20;
+  const filters={sys:true,tool:true,reason:true,code:true,hide:true,word:false,titleonly:false,hideprompts:false,compact:true};
+  const modelFilters=Object.create(null);
+  const favorites=Object.create(null);
+  const tagsById=Object.create(null);
+  const notesById=Object.create(null);
   let store=[],current=null,searchTerm='';
-  const set=t=>status.textContent=t||'';
-  const fmt=t=>{if(!t)return'';const d=new Date(typeof t==='number'?t*1000:t);return d.toISOString().slice(0,19).replace('T',' ');};// yyyy-mm-dd hh:mm:ss
+  let pendingCurrentId='';
+  let footerCollapsed=false;
+  let focusMode=false;
+  let onlyFav=false;
+  let dateField='update',dateFrom='',dateTo='';
+  let convFindTerm='',convMarks=[],convMarkIdx=-1;
+  let convFindWord=false;
+  let convFindFull=false;
+  let rawToolSearch=false;
+  let tagFilter='';
+  let tagFilters=[];
+  let tagFilterMode='any';
+  let exportMode='visible';
+  let listWidth=320;
+  let advancedOpen=false;
+  let tagMgrOpen=false;
+  let statusTimer=0;
+  let cfindInpEl=null,cfindPrevBtnEl=null,cfindNextBtnEl=null,cfindTopBtnEl=null,cfindBottomBtnEl=null,cfindWordChkEl=null,cfindFullChkEl=null,cfindPosEl=null;
+  let cfindHiddenEl=null,visibleMsgSet=new Set();
+
+  const set=t=>{
+    status.textContent=t||'';
+    if(statusTimer){clearTimeout(statusTimer);statusTimer=0;}
+    if(t){
+      statusTimer=setTimeout(()=>{
+        status.textContent='';
+        statusTimer=0;
+      },30000);
+    }
+  };
+  const num=t=>typeof t==='number'?t:(Number(t)||0);
+  const fmt=t=>{if(!t)return'';const d=new Date(typeof t==='number'?t*1000:t);return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,19).replace('T',' ');};// yyyy-mm-dd hh:mm:ss
   const role=m=>m.author?.role||m.role||'assistant';
   const model=m=>m.metadata?.model_slug||m.metadata?.model||'';
-  const escapeHtml=s=>String(s??'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-  const bodyText=c=>{if(!c)return'';if(typeof c==='string')return c;if(Array.isArray(c))return c.map(bodyText).join('\n');if(c.content_type){switch(c.content_type){case'text':return bodyText(c.parts||c.text);case'user_editable_context':return (c.user_profile||'')+'\n'+(c.user_instructions||'');case'tether_quote':return (c.title||'')+' '+(c.text||'');case'thoughts':return (c.thoughts||[]).map(t=>t.summary+' '+t.content).join('\n');case'reasoning_recap':return c.content||'';case'code':return c.text||'';case'multimodal_text':return c.parts?.map(p=>p.content_type==='audio_transcription'?p.text:(typeof p==='string'?p:'')).filter(Boolean).join('\n');default:return JSON.stringify(c)}}if(c.parts)return bodyText(c.parts);return JSON.stringify(c)};
-  const renderBody=c=>{if(!c)return'';if(c.content_type==='code'){if(!filters.code)return'';const txt=c.text||'';const large=txt.length>600;return `<pre class="${large?'collapsed ':''}">${escapeHtml(txt)}</pre>`;}if(c.content_type==='multimodal_text'){const audible=c.parts?.find(p=>p.content_type==='audio_transcription');return audible?escapeHtml(audible.text):'[multimodal]';}return escapeHtml(bodyText(c));};
-  const collect=r=>Array.isArray(r.messages)?r.messages.sort((a,b)=>a.create_time-b.create_time):r.mapping?Object.values(r.mapping).filter(n=>n.message).map(n=>({...n.message})).sort((a,b)=>a.create_time-b.create_time):[];
-  const norm=r=>{const msgs=collect(r);return{id:r.id||r.conversation_id||crypto.randomUUID(),title:r.title||'(untitled)',update:r.update_time||msgs.slice(-1)[0]?.create_time,create:r.create_time||msgs[0]?.create_time,msg:msgs};};
-  const load=obj=>{store=(Array.isArray(obj)?obj:obj.conversations||obj.items||[]).map(norm);set(store.length+' chats');renderList();pane.textContent='pick →';};
-  const allowed=m=>{const r=role(m);if(!filters.sys&&r==='system')return false;if(!filters.tool&&(r==='tool'||r==='function'))return false;const ct=m.content?.content_type;if(!filters.reason&&(ct==='thoughts'||ct==='reasoning_recap'))return false;if(!filters.code&&ct==='code')return false;const body=bodyText(m.content).trim();if(filters.hide&&!body)return false;return true;};
-  const open=c=>{current=c;pane.innerHTML='';c.msg.filter(allowed).forEach(m=>{const art=document.createElement('div');art.className='msg';art.innerHTML=`<div class="hdr"><span class="role ${role(m)}">${role(m)}</span>${model(m)?`<span class="model">${model(m)}</span>`:''}${m.id?`<span class="mid">${m.id}</span>`:''}<span class="time">${fmt(m.create_time)}</span></div><div class="body">${renderBody(m.content)}</div>`;pane.appendChild(art);});if(!pane.innerHTML)pane.textContent='(all filtered)';pane.dataset.id=c.id;};
-  const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const matches=(hay,q)=>{if(!hay)return false;return filters.word?new RegExp('\\b'+escapeRe(q)+'\\b','i').test(hay):hay.includes(q);};
-  const renderList=()=>{list.innerHTML='';let filtered=store;const q=searchTerm.toLowerCase().trim();if(q){filtered=filtered.filter(c=>{if(matches(c.title.toLowerCase(),q))return true;return c.msg.some(m=>matches(bodyText(m.content).toLowerCase(),q));});}
-    filtered.sort((a,b)=>{switch(sortSel.value){case'cdesc':return b.create-a.create;case'casc':return a.create-b.create;case'uasc':return a.update-b.update;default:return b.update-a.update;}});
-    filtered.forEach(c=>{const div=document.createElement('div');div.className='conv';div.innerHTML=`<div class="title">${escapeHtml(c.title)}</div><div class="cid">${c.id}</div><div class="meta"><span>upd ${fmt(c.update)}</span><span>cre ${fmt(c.create)}</span></div>`;div.onclick=()=>open(c);list.appendChild(div);});if(!filtered.length)list.innerHTML='<div class="empty">no match</div>';};
-  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>load(JSON.parse(t))).catch(()=>set('parse err'));};
-  document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(!f)return;f.text().then(t=>load(JSON.parse(t))).catch(()=>set('parse err'));});
-  ['sys','tool','reason','code','hide'].forEach(id=>$('#'+id).onchange=e=>{filters[id]=e.target.checked;if(current)open(current);} );
-  wordChk.onchange=e=>{filters.word=e.target.checked;renderList();};
-  searchBox.oninput=e=>{searchTerm=e.target.value.toLowerCase();renderList();};
-  sortSel.onchange=renderList;
+  const esc=s=>String(s??'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+  const hue=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))%360;return h;};
+  const chip=md=>`<span class="mchip" style="--mh:${hue(md)}">${esc(md)}</span>`;
+
+  const readSettings=()=>{
+    try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}catch{return {};}
+  };
+  const saved=readSettings();
+  if(saved.filters&&typeof saved.filters==='object')Object.assign(filters,saved.filters);
+  if(saved.modelFilters&&typeof saved.modelFilters==='object')Object.assign(modelFilters,saved.modelFilters);
+  if(saved.favorites&&typeof saved.favorites==='object')Object.assign(favorites,saved.favorites);
+  if(saved.tagsById&&typeof saved.tagsById==='object')Object.assign(tagsById,saved.tagsById);
+  if(saved.notesById&&typeof saved.notesById==='object')Object.assign(notesById,saved.notesById);
+  if(typeof saved.searchTerm==='string')searchTerm=saved.searchTerm;
+  if(typeof saved.currentId==='string')pendingCurrentId=saved.currentId;
+  if(typeof saved.footerCollapsed==='boolean')footerCollapsed=saved.footerCollapsed;
+  if(typeof saved.focusMode==='boolean')focusMode=saved.focusMode;
+  if(typeof saved.onlyFav==='boolean')onlyFav=saved.onlyFav;
+  if(saved.dateField==='update'||saved.dateField==='create')dateField=saved.dateField;
+  if(typeof saved.dateFrom==='string')dateFrom=saved.dateFrom;
+  if(typeof saved.dateTo==='string')dateTo=saved.dateTo;
+  if(typeof saved.convFindTerm==='string')convFindTerm=saved.convFindTerm;
+  if(typeof saved.convFindWord==='boolean')convFindWord=saved.convFindWord;
+  if(typeof saved.convFindFull==='boolean')convFindFull=saved.convFindFull;
+  if(typeof saved.rawToolSearch==='boolean')rawToolSearch=saved.rawToolSearch;
+  if(typeof saved.tagFilter==='string')tagFilter=saved.tagFilter;
+  if(Array.isArray(saved.tagFilters))tagFilters=saved.tagFilters.map(t=>String(t||'').trim()).filter(Boolean);
+  if(saved.tagFilterMode==='all'||saved.tagFilterMode==='any'||saved.tagFilterMode==='only')tagFilterMode=saved.tagFilterMode;
+  if(saved.exportMode==='full'||saved.exportMode==='visible')exportMode=saved.exportMode;
+  if(typeof saved.listWidth==='number'&&saved.listWidth>180)listWidth=saved.listWidth;
+  if(typeof saved.advancedOpen==='boolean')advancedOpen=saved.advancedOpen;
+  if(typeof saved.tagMgrOpen==='boolean')tagMgrOpen=saved.tagMgrOpen;
+
+  const settingsSnapshot=()=>({
+    filters,
+    modelFilters,
+    favorites,
+    tagsById,
+    notesById,
+    searchTerm,
+    sort:sortSel.value,
+    currentId:current?.id||pendingCurrentId||'',
+    footerCollapsed,
+    focusMode,
+    onlyFav,
+    dateField,
+    dateFrom,
+    dateTo,
+    convFindTerm,
+    convFindWord,
+    convFindFull,
+    rawToolSearch,
+    tagFilter,
+    tagFilters,
+    tagFilterMode,
+    exportMode,
+    listWidth,
+    advancedOpen,
+    tagMgrOpen
+  });
+  const saveSettings=()=>{
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(settingsSnapshot()));
+    }catch{}
+  };
+  const openCacheDb=()=>new Promise((resolve,reject)=>{
+    if(!window.indexedDB)return reject(new Error('no indexeddb'));
+    const req=indexedDB.open(CACHE_DB,1);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(CACHE_STORE))req.result.createObjectStore(CACHE_STORE);};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('db open error'));
+  });
+  const cacheSet=async txt=>{
+    const db=await openCacheDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(CACHE_STORE,'readwrite');
+      tx.objectStore(CACHE_STORE).put(txt,CACHE_KEY);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error('db write error'));
+    });
+    db.close();
+  };
+  const cacheGet=async()=>{
+    const db=await openCacheDb();
+    const val=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(CACHE_STORE,'readonly');
+      const req=tx.objectStore(CACHE_STORE).get(CACHE_KEY);
+      req.onsuccess=()=>resolve(req.result||'');
+      req.onerror=()=>reject(req.error||new Error('db read error'));
+    });
+    db.close();
+    return val;
+  };
+  const parseAndLoad=(txt,persist=true)=>{
+    try{
+      load(JSON.parse(txt));
+      if(persist)cacheSet(txt).catch(()=>set('loaded; cache write failed'));
+    }catch{
+      set('parse err');
+    }
+  };
+  const restoreLastJson=async()=>{
+    try{
+      const txt=await cacheGet();
+      if(!txt)return;
+      parseAndLoad(txt,false);
+      set('restored last json');
+    }catch{}
+  };
+  const importSettingsObject=obj=>{
+    if(!obj||typeof obj!=='object')throw new Error('invalid data');
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(obj));
+    location.reload();
+  };
+  const setFooterCollapsed=collapsed=>{
+    footerCollapsed=!!collapsed;
+    document.body.classList.toggle('footerhidden',footerCollapsed);
+    footerToggle.classList.toggle('active',!footerCollapsed);
+    footerToggle.textContent=footerCollapsed?'show conversational filters':'hide conversational filters';
+  };
+  const setFocusMode=on=>{
+    focusMode=!!on;
+    document.body.classList.toggle('focusmode',focusMode);
+    focusBtn.classList.toggle('active',focusMode);
+    focusBtn.textContent=focusMode?'unfocus':'focus';
+  };
+  const setAdvancedOpen=on=>{
+    advancedOpen=!!on;
+    advRow.classList.toggle('open',advancedOpen);
+    moreBtn.classList.toggle('active',advancedOpen);
+    moreBtn.textContent=advancedOpen?'✕':'☰';
+    moreBtn.title=advancedOpen?'hide extra controls':'show extra controls';
+  };
+  const applyListWidth=()=>{
+    main.style.setProperty('--listw',`${Math.max(220,Math.min(820,listWidth))}px`);
+  };
+
+  const copyText=txt=>{
+    if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(txt);
+    return new Promise((resolve,reject)=>{
+      try{
+        const ta=document.createElement('textarea');
+        ta.value=txt;
+        ta.style.position='fixed';
+        ta.style.left='-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok=document.execCommand('copy');
+        ta.remove();
+        ok?resolve():reject(new Error('copy failed'));
+      }catch(err){reject(err);}
+    });
+  };
+  const isEmptySystem=m=>role(m)==='system'&&!bodyText(m.content).trim();
+
+  const bodyText=c=>{
+    if(!c)return'';
+    if(typeof c==='string')return c;
+    if(Array.isArray(c))return c.map(bodyText).join('\n');
+    if(c.content_type){
+      switch(c.content_type){
+        case'text':return bodyText(c.parts||c.text);
+        case'user_editable_context':return (c.user_profile||'')+'\n'+(c.user_instructions||'');
+        case'tether_quote':return (c.title||'')+' '+(c.text||'');
+        case'thoughts':return (c.thoughts||[]).map(t=>`${t.summary||''} ${t.content||''}`).join('\n');
+        case'reasoning_recap':return c.content||'';
+        case'code':return c.text||'';
+        case'multimodal_text':return c.parts?.map(p=>p.content_type==='audio_transcription'?p.text:(typeof p==='string'?p:'')).filter(Boolean).join('\n');
+        default:return JSON.stringify(c);
+      }
+    }
+    if(c.parts)return bodyText(c.parts);
+    return JSON.stringify(c);
+  };
+  const conversationText=c=>{
+    const tags=(Array.isArray(tagsById[c.id])?tagsById[c.id]:[]).filter(Boolean);
+    const note=(notesById[c.id]||'').trim();
+    const lines=[
+      `title: ${c.title}`,
+      `id: ${c.id}`,
+      `updated: ${fmt(c.update)}`,
+      `created: ${fmt(c.create)}`,
+      `models: ${c.models.length?c.models.join(', '):'(none)'}`,
+      `tags: ${tags.length?tags.join(', '):'(none)'}`,
+      `note: ${note||'(none)'}`,
+      ''
+    ];
+    c.msg.forEach(m=>{
+      if(isEmptySystem(m))return;
+      const head=`[${fmt(m.create_time)}] ${role(m)}${model(m)?` (${model(m)})`:''}`;
+      lines.push(head);
+      lines.push(bodyText(m.content)||'[empty]');
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+  const searchText=m=>{
+    const c=m?.content;
+    if(!c)return'';
+    if(rawToolSearch&&(role(m)==='tool'||role(m)==='function'))return bodyText(c);
+    if(c.content_type==='multimodal_text'){
+      const audible=c.parts?.find(p=>p.content_type==='audio_transcription');
+      return audible?audible.text:'[multimodal]';
+    }
+    if(c.content_type==='code')return c.text||'';
+    return bodyText(c);
+  };
+  const normalizeTags=arr=>Array.from(new Set((Array.isArray(arr)?arr:[]).map(t=>String(t||'').trim().slice(0,TAG_MAX)).filter(Boolean))).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+  const conversationTags=c=>normalizeTags(tagsById[c.id]);
+  const gatherTags=()=>normalizeTags(store.flatMap(c=>conversationTags(c)));
+  const gatherTagCounts=()=>{
+    const counts=Object.create(null);
+    store.forEach(c=>conversationTags(c).forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+    return counts;
+  };
+  const setTagManagerOpen=on=>{
+    tagMgrOpen=!!on;
+    tagMgr.classList.toggle('open',tagMgrOpen);
+    tagMgrToggleBtn.classList.toggle('active',tagMgrOpen);
+    tagMgrToggleBtn.textContent=tagMgrOpen?'hide tag manager':'tag manager';
+  };
+  const renderTagManager=()=>{
+    const counts=gatherTagCounts();
+    const tags=Object.keys(counts).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+    const prevSrc=tagMgrSrcSel.value;
+    const prevDst=tagMgrDstSel.value;
+    if(!tags.length){
+      tagMgrSrcSel.innerHTML='<option value="">(no tags)</option>';
+      tagMgrDstSel.innerHTML='<option value="">(no tags)</option>';
+      tagMgrSrcSel.disabled=true;
+      tagMgrDstSel.disabled=true;
+      tagMgrRenameInp.disabled=true;
+      tagMgrRenameBtn.disabled=true;
+      tagMgrMergeBtn.disabled=true;
+      tagMgrDelBtn.disabled=true;
+      tagMgrMeta.textContent='No tags available yet.';
+      return;
+    }
+    const srcOptions=tags.map(t=>`<option value="${esc(t)}">${esc(t)} (${counts[t]})</option>`);
+    const dstOptions=['<option value="">merge target...</option>'].concat(tags.map(t=>`<option value="${esc(t)}">${esc(t)} (${counts[t]})</option>`));
+    tagMgrSrcSel.innerHTML=srcOptions.join('');
+    tagMgrDstSel.innerHTML=dstOptions.join('');
+    tagMgrSrcSel.disabled=false;
+    tagMgrDstSel.disabled=false;
+    tagMgrRenameInp.disabled=false;
+    tagMgrRenameBtn.disabled=false;
+    tagMgrMergeBtn.disabled=false;
+    tagMgrDelBtn.disabled=false;
+    tagMgrSrcSel.value=tags.includes(prevSrc)?prevSrc:tags[0];
+    if(prevDst&&tags.includes(prevDst)&&prevDst!==tagMgrSrcSel.value)tagMgrDstSel.value=prevDst;
+    else tagMgrDstSel.value='';
+    tagMgrMeta.textContent=`${tags.length} tags`;
+  };
+  const normalizeActiveTagFilters=()=>{
+    const tags=gatherTags();
+    if(tagFilter&&!tags.includes(tagFilter))tagFilter='';
+    tagFilters=tagFilters.filter(t=>tags.includes(t));
+    tagPick.value=tagFilter;
+  };
+  const renderSearchHints=()=>{
+    const vals=[
+      ...gatherTags().map(t=>`t/${t}`),
+      ...gatherModels().map(m=>`m/${m}`)
+    ];
+    searchHints.innerHTML=vals.slice(0,500).map(v=>`<option value="${esc(v)}"></option>`).join('');
+  };
+  const renderTagFilter=()=>{
+    const tags=gatherTags();
+    const base=['<option value="">all tags</option>','<option value="__none__">none</option>'];
+    const divider=tags.length?['<option value="" disabled>----------------</option>']:[];
+    const options=base.concat(divider,tags.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`));
+    tagPick.innerHTML=options.join('');
+    if(Array.from(tagPick.options).some(o=>o.value===tagFilter))tagPick.value=tagFilter;
+    else { tagFilter=''; tagPick.value=''; }
+    const multiOptions=tags.map(t=>`<option value="${esc(t)}" ${tagFilters.includes(t)?'selected':''}>${esc(t)}</option>`);
+    tagMultiSel.innerHTML=multiOptions.join('');
+    tagLine.classList.toggle('hidden',tags.length===0);
+    if(tags.length===0){tagFilters=[];tagFilter='';tagPick.value='';}
+    tagModeSel.value=tagFilterMode;
+    renderTagManager();
+    renderSearchHints();
+  };
+  const printConversation=(c,entries)=>{
+    const tags=(Array.isArray(tagsById[c.id])?tagsById[c.id]:[]).filter(Boolean);
+    const note=(notesById[c.id]||'').trim();
+    const msgs=exportMode==='full'
+      ?c.msg.filter(m=>!isEmptySystem(m))
+      :entries.filter(e=>e.type==='msg').map(e=>e.m);
+    const rows=msgs.map(m=>{
+      const head=`${fmt(m.create_time)} | ${role(m)}${model(m)?` | ${model(m)}`:''}`;
+      return `<section class="row"><div class="mh">${esc(head)}</div><div class="mb">${esc(bodyText(m.content)||'[empty]')}</div></section>`;
+    }).join('');
+    const w=window.open('','_blank');
+    if(!w){set('print blocked (allow popups)');return;}
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(c.title)}</title><style>
+      body{margin:18px;font:12px/1.35 "Segoe UI",system-ui,sans-serif;color:#111}
+      h1{margin:0 0 6px;font-size:18px;line-height:1.2}
+      .meta{font-size:10px;color:#4b5563;margin:0 0 10px}
+      .note{margin:0 0 10px;padding:6px 8px;border:1px solid #d9dde5;background:#fafbfc;white-space:pre-wrap}
+      .row{margin:0 0 14px;padding-top:8px;border-top:1px solid #e5e7eb;break-inside:auto;page-break-inside:auto}
+      .mh{font:600 13px/1.35 "Segoe UI",system-ui,sans-serif;color:#1f2937;margin:0 0 5px}
+      .mb{white-space:pre-wrap;word-break:break-word;margin:0}
+      @media print{body{margin:12mm}.row{margin:0 0 11px;padding-top:6px}}
+    </style></head><body><h1>${esc(c.title)}</h1><div class="meta">id: ${esc(c.id)} | models: ${esc(c.models.length?c.models.join(', '):'(none)')} | tags: ${esc(tags.length?tags.join(', '):'(none)')} | mode: ${esc(exportMode)}</div>${note?`<div class="note">${esc(note)}</div>`:''}${rows}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+  const hiddenSummary=(items,label)=>{
+    const byRole=Object.create(null);
+    const mdSet=new Set();
+    items.forEach(it=>{
+      byRole[it.r]=(byRole[it.r]||0)+1;
+      const md=model(it.m);
+      if(md)mdSet.add(md);
+    });
+    const rolePart=Object.keys(byRole).sort().map(r=>`${byRole[r]} ${r}`).join(', ');
+    const mdl=Array.from(mdSet).sort((a,b)=>a.localeCompare(b));
+    return `[${label}] ${rolePart}${mdl.length?` | ${mdl.join(', ')}`:''} | ${fmt(items[0].m.create_time)}`;
+  };
+  const buildEntries=c=>{
+    const src=c.msg.map(m=>({m,base:allowed(m),modelOk:modelAllowed(m),r:role(m)}));
+    const hidePrompt=new Set();
+    if(filters.hideprompts){
+      for(let i=0;i<src.length;i++){
+        if(src[i].r!=='user'||!src[i].base)continue;
+        let j=i+1,hasAsst=false,allFiltered=true;
+        while(j<src.length&&src[j].r!=='user'){
+          if(src[j].base&&src[j].r==='assistant'){
+            hasAsst=true;
+            if(src[j].modelOk)allFiltered=false;
+          }
+          j++;
+        }
+        if(hasAsst&&allFiltered)hidePrompt.add(i);
+      }
+    }
+    const out=[];
+    let i=0;
+    while(i<src.length){
+      const item=src[i];
+      if(!item.base){i++;continue;}
+      if(item.r==='user'&&hidePrompt.has(i)){
+        let j=i+1;
+        const hiddenRun=[item];
+        while(j<src.length&&src[j].r!=='user'){
+          if(src[j].base)hiddenRun.push(src[j]);
+          j++;
+        }
+        if(filters.compact)out.push({type:'compact',text:hiddenSummary(hiddenRun,'hidden prompt+responses')});
+        i=j;
+        continue;
+      }
+      if(!item.modelOk){
+        let j=i+1;
+        const hiddenRun=[item];
+        while(j<src.length&&src[j].base&&!src[j].modelOk&&!(src[j].r==='user'&&hidePrompt.has(j))){
+          hiddenRun.push(src[j]);
+          j++;
+        }
+        if(filters.compact)out.push({type:'compact',text:hiddenSummary(hiddenRun,'hidden by model filter')});
+        i=j;
+        continue;
+      }
+      out.push({type:'msg',m:item.m});
+      i++;
+    }
+    return out;
+  };
+  const filteredConversationText=(c,entries)=>{
+    const tags=(Array.isArray(tagsById[c.id])?tagsById[c.id]:[]).filter(Boolean);
+    const note=(notesById[c.id]||'').trim();
+    const lines=[
+      `title: ${c.title}`,
+      `id: ${c.id}`,
+      `updated: ${fmt(c.update)}`,
+      `created: ${fmt(c.create)}`,
+      `models: ${c.models.length?c.models.join(', '):'(none)'}`,
+      `tags: ${tags.length?tags.join(', '):'(none)'}`,
+      `note: ${note||'(none)'}`,
+      ''
+    ];
+    entries.forEach(e=>{
+      if(e.type==='compact'){lines.push(e.text,'');return;}
+      const m=e.m;
+      const head=`[${fmt(m.create_time)}] ${role(m)}${model(m)?` (${model(m)})`:''}`;
+      lines.push(head);
+      lines.push(bodyText(m.content)||'[empty]');
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+  const visibleMessagesText=(c,entries)=>{
+    const tags=(Array.isArray(tagsById[c.id])?tagsById[c.id]:[]).filter(Boolean);
+    const note=(notesById[c.id]||'').trim();
+    const lines=[
+      `title: ${c.title}`,
+      `id: ${c.id}`,
+      `updated: ${fmt(c.update)}`,
+      `created: ${fmt(c.create)}`,
+      `models: ${c.models.length?c.models.join(', '):'(none)'}`,
+      `tags: ${tags.length?tags.join(', '):'(none)'}`,
+      `note: ${note||'(none)'}`,
+      ''
+    ];
+    entries.forEach(e=>{
+      if(e.type!=='msg')return;
+      const m=e.m;
+      const head=`[${fmt(m.create_time)}] ${role(m)}${model(m)?` (${model(m)})`:''}`;
+      lines.push(head);
+      lines.push(bodyText(m.content)||'[empty]');
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+  const exportConversationText=(c,entries)=>exportMode==='full'?conversationText(c):visibleMessagesText(c,entries);
+
+  const renderBody=c=>{
+    if(!c)return'';
+    if(c.content_type==='code'){
+      if(!filters.code)return'';
+      const txt=c.text||'';
+      const large=txt.length>600;
+      return `<pre class="${large?'collapsed ':''}">${esc(txt)}</pre>`;
+    }
+    if(c.content_type==='multimodal_text'){
+      const audible=c.parts?.find(p=>p.content_type==='audio_transcription');
+      return audible?esc(audible.text):'[multimodal]';
+    }
+    return esc(bodyText(c));
+  };
+
+  const collect=r=>Array.isArray(r.messages)
+    ?r.messages.sort((a,b)=>num(a.create_time)-num(b.create_time))
+    :r.mapping
+      ?Object.values(r.mapping).filter(n=>n.message).map(n=>({...n.message})).sort((a,b)=>num(a.create_time)-num(b.create_time))
+      :[];
+
+  const norm=r=>{
+    const msgs=collect(r);
+    const models=Array.from(new Set(msgs.map(m=>model(m)).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+    return {
+      id:r.id||r.conversation_id||crypto.randomUUID(),
+      title:r.title||'(untitled)',
+      update:num(r.update_time)||num(msgs[msgs.length-1]?.create_time),
+      create:num(r.create_time)||num(msgs[0]?.create_time),
+      models,
+      msg:msgs
+    };
+  };
+
+  const gatherModels=()=>{
+    const found=new Set();
+    store.forEach(c=>c.msg.forEach(m=>{const md=model(m);if(md)found.add(md);}));
+    return Array.from(found).sort((a,b)=>a.localeCompare(b));
+  };
+
+  const renderModelFilters=()=>{
+    const keepTitle=modelsBox.querySelector('.title');
+    modelsBox.innerHTML='';
+    if(keepTitle)modelsBox.appendChild(keepTitle);
+    gatherModels().forEach(md=>{
+      if(!(md in modelFilters))modelFilters[md]=true;
+      const lab=document.createElement('label');
+      lab.className='badge';
+      lab.innerHTML=`<input type="checkbox" data-model="${esc(md)}" ${modelFilters[md]?'checked':''}>${esc(md)}`;
+      modelsBox.appendChild(lab);
+    });
+  };
+
+  const load=obj=>{
+    store=(Array.isArray(obj)?obj:obj.conversations||obj.items||[]).map(norm);
+    current=null;
+    renderModelFilters();
+    renderTagFilter();
+    set('');
+    renderList();
+    const target=store.find(c=>c.id===pendingCurrentId);
+    if(target){
+      open(target);
+      setActiveRow(target.id,true);
+    }else{
+      pane.textContent='pick ->';
+    }
+    updateNav();
+  };
+
+  const allowed=m=>{
+    const r=role(m);
+    if(!filters.sys&&r==='system')return false;
+    if(!filters.tool&&(r==='tool'||r==='function'))return false;
+    const ct=m.content?.content_type;
+    if(!filters.reason&&(ct==='thoughts'||ct==='reasoning_recap'))return false;
+    if(!filters.code&&ct==='code')return false;
+    const body=bodyText(m.content).trim();
+    if(r==='system'&&!body)return false;
+    if(filters.hide&&!body)return false;
+    return true;
+  };
+
+  const modelAllowed=m=>{
+    const md=model(m);
+    return !md||modelFilters[md]!==false;
+  };
+
+  const open=c=>{
+    current=c;
+    pane.innerHTML='';
+    const findBar=document.createElement('div');
+    findBar.className='convfind';
+    findBar.innerHTML=`<input type="text" placeholder="find in convo..."><label class="badge"><input type="checkbox" class="cfindword">whole word</label><label class="badge"><input type="checkbox" class="cfindfull">full convo</label><button class="navbtn" type="button">prev hit</button><button class="navbtn" type="button">next hit</button><button class="navbtn" type="button">top</button><button class="navbtn" type="button">bottom</button><span class="hint"></span>`;
+    pane.appendChild(findBar);
+    cfindInpEl=findBar.querySelector('input');
+    cfindWordChkEl=findBar.querySelector('.cfindword');
+    cfindFullChkEl=findBar.querySelector('.cfindfull');
+    cfindPrevBtnEl=findBar.querySelectorAll('button')[0];
+    cfindNextBtnEl=findBar.querySelectorAll('button')[1];
+    cfindTopBtnEl=findBar.querySelectorAll('button')[2];
+    cfindBottomBtnEl=findBar.querySelectorAll('button')[3];
+    cfindPosEl=findBar.querySelector('.hint');
+    cfindInpEl.value=convFindTerm;
+    cfindWordChkEl.checked=convFindWord;
+    cfindFullChkEl.checked=convFindFull;
+    cfindInpEl.oninput=e=>applyConversationFind(e.target.value);
+    cfindInpEl.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();jumpConversationFind(e.shiftKey?-1:1);}};
+    cfindWordChkEl.onchange=e=>{convFindWord=e.target.checked;applyConversationFind(cfindInpEl.value);};
+    cfindFullChkEl.onchange=e=>{convFindFull=e.target.checked;applyConversationFind(cfindInpEl.value);};
+    cfindPrevBtnEl.onclick=()=>jumpConversationFind(-1);
+    cfindNextBtnEl.onclick=()=>jumpConversationFind(1);
+    cfindTopBtnEl.onclick=()=>pane.scrollTo({top:0,behavior:'smooth'});
+    cfindBottomBtnEl.onclick=()=>pane.scrollTo({top:pane.scrollHeight,behavior:'smooth'});
+    cfindHiddenEl=document.createElement('div');
+    cfindHiddenEl.className='cfindhidden';
+    cfindHiddenEl.style.display='none';
+    pane.appendChild(cfindHiddenEl);
+    const visibleMsgs=c.msg.filter(m=>!isEmptySystem(m));
+    const lastModelUsed=[...visibleMsgs].reverse().map(m=>model(m)).find(Boolean)||'(none)';
+    const entries=buildEntries(c);
+    visibleMsgSet=new Set(entries.filter(e=>e.type==='msg').map(e=>e.m));
+    const favOn=!!favorites[c.id];
+    const tags=conversationTags(c);
+    const note=(notesById[c.id]||'');
+    const head=document.createElement('div');
+    head.className='panehead';
+    head.innerHTML=`<div class="ptitle">${esc(c.title)}</div><div class="pmeta"><span>upd ${fmt(c.update)}</span><span>cre ${fmt(c.create)}</span><span>msgs ${visibleMsgs.length}</span><span>models ${c.models.length}</span><span>last ${esc(lastModelUsed)}</span>${favOn?'<span>favorited</span>':''}</div><div class="pmodels">${c.models.length?`models: ${c.models.map(chip).join(' ')}`:'models: (none)'}</div><div class="cid">${esc(c.id)}</div><div class="ptags"><span class="hint" style="padding:0">tags</span>${tags.length?tags.map(t=>`<span class="tchip">${esc(t)} <button type="button" data-rmtag="${esc(t)}">x</button></span>`).join(''):'<span class="hint" style="padding:0">none</span>'}<input type="text" id="tagadd" placeholder="add tag" maxlength="20"></div><div class="pnotes"><textarea id="noteedit" placeholder="notes...">${esc(note)}</textarea></div><div class="pactions"><button class="ibtn" data-act="toggle-fav" type="button">${favOn?'unfavorite':'favorite'}</button><button class="ibtn" data-act="copy-id" type="button">copy id</button><label class="hint" style="padding:0">export mode:</label><select id="exportmode" title="copy/export/print mode"><option value="visible">visible only</option><option value="full">full convo</option></select><button class="ibtn" data-act="copy-conv" type="button">copy convo</button><button class="ibtn" data-act="export-conv" type="button">export txt</button><button class="ibtn" data-act="print-conv" type="button">print</button></div>`;
+    pane.appendChild(head);
+    let shown=0;
+    const tagAdd=head.querySelector('#tagadd');
+    const noteEdit=head.querySelector('#noteedit');
+    const exportModeSel=head.querySelector('#exportmode');
+    exportModeSel.value=exportMode;
+    exportModeSel.onchange=e=>{
+      exportMode=e.target.value==='full'?'full':'visible';
+      saveSettings();
+    };
+
+    tagAdd.onkeydown=e=>{
+      if(e.key!=='Enter')return;
+      e.preventDefault();
+      const t=(tagAdd.value||'').trim().slice(0,TAG_MAX);
+      if(!t)return;
+      tagsById[c.id]=normalizeTags([...(tagsById[c.id]||[]),t]);
+      saveSettings();
+      open(c);
+      renderList();
+      renderTagFilter();
+    };
+    noteEdit.oninput=()=>{
+      notesById[c.id]=noteEdit.value||'';
+      saveSettings();
+    };
+
+    head.addEventListener('click',e=>{
+      const rm=e.target?.dataset?.rmtag;
+      if(rm){
+        tagsById[c.id]=normalizeTags((tagsById[c.id]||[]).filter(t=>t!==rm));
+        saveSettings();
+        open(c);
+        renderList();
+        renderTagFilter();
+        return;
+      }
+      const act=e.target?.dataset?.act;
+      if(!act)return;
+      if(act==='toggle-fav'){
+        if(favorites[c.id])delete favorites[c.id];else favorites[c.id]=true;
+        renderList();
+        open(c);
+        saveSettings();
+      }
+      if(act==='copy-id')copyText(c.id).then(()=>set('copied id')).catch(()=>set('copy failed'));
+      if(act==='copy-conv')copyText(exportConversationText(c,entries)).then(()=>set(`copied (${exportMode})`)).catch(()=>set('copy failed'));
+      if(act==='export-conv'){
+        const blob=new Blob([exportConversationText(c,entries)],{type:'text/plain;charset=utf-8'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        const safe=(c.title||'conversation').replace(/[^\w.-]+/g,'_').slice(0,80);
+        a.download=`${safe||'conversation'}_${exportMode}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      if(act==='print-conv')printConversation(c,entries);
+    });
+    entries.forEach((e,idx)=>{
+      if(e.type==='compact'){
+        const div=document.createElement('div');
+        div.className='compact';
+        div.textContent=e.text;
+        pane.appendChild(div);
+        shown++;
+        return;
+      }
+      const m=e.m;
+      const art=document.createElement('div');
+      art.className='msg';
+      art.innerHTML=`<div class="hdr"><span class="role ${esc(role(m))}">${esc(role(m))}</span>${model(m)?chip(model(m)):''}${m.id?`<span class="mid">${esc(m.id)}</span>`:''}<span class="time">${fmt(m.create_time)}</span><button class="ibtn copymsg" data-idx="${idx}" type="button">copy</button></div><div class="body">${renderBody(m.content)}</div>`;
+      pane.appendChild(art);
+      shown++;
+    });
+
+    if(shown===0){
+      const empty=document.createElement('div');
+      empty.className='empty';
+      empty.textContent='(all filtered)';
+      pane.appendChild(empty);
+    }
+    pane.dataset.id=c.id;
+    applyConversationFind(convFindTerm);
+    updateNav();
+    saveSettings();
+  };
+
+  const isWordChar=ch=>!!ch&&/[0-9A-Za-z_]/.test(ch);
+  const findRanges=(text,needle,whole=false)=>{
+    if(!text||!needle)return [];
+    const hay=text.toLowerCase();
+    const q=needle.toLowerCase();
+    const out=[];
+    let pos=0;
+    while(true){
+      const hit=hay.indexOf(q,pos);
+      if(hit<0)break;
+      const end=hit+q.length;
+      const ok=!whole||(!isWordChar(hay[hit-1])&&!isWordChar(hay[end]));
+      if(ok)out.push([hit,end]);
+      pos=hit+Math.max(1,q.length);
+    }
+    return out;
+  };
+  const matches=(hay,q,whole=filters.word)=>findRanges(hay||'',q||'',whole).length>0;
+  const toStartSec=d=>d?Math.floor(new Date(`${d}T00:00:00`).getTime()/1000):null;
+  const toEndSec=d=>d?Math.floor(new Date(`${d}T23:59:59`).getTime()/1000):null;
+  const clearConversationFind=()=>{
+    pane.querySelectorAll('mark.cfind').forEach(m=>{
+      const t=document.createTextNode(m.textContent||'');
+      m.replaceWith(t);
+    });
+    pane.querySelectorAll('.msg .body').forEach(b=>b.normalize());
+    convMarks=[];
+    convMarkIdx=-1;
+    if(cfindPosEl)cfindPosEl.textContent='';
+  };
+  const jumpConversationFind=step=>{
+    if(!convMarks.length)return;
+    convMarks.forEach(m=>m.classList.remove('active'));
+    convMarkIdx=(convMarkIdx+step+convMarks.length)%convMarks.length;
+    const mark=convMarks[convMarkIdx];
+    mark.classList.add('active');
+    mark.scrollIntoView({block:'center',behavior:'smooth'});
+    if(cfindPosEl)cfindPosEl.textContent=`${convMarkIdx+1}/${convMarks.length}`;
+  };
+  const applyConversationFind=term=>{
+    convFindTerm=(term||'').trim();
+    clearConversationFind();
+    if(cfindHiddenEl){cfindHiddenEl.style.display='none';cfindHiddenEl.textContent='';}
+    if(!current||!convFindTerm){saveSettings();return;}
+    const targets=Array.from(pane.querySelectorAll('.msg .body,.compact,.panehead .ptitle,.panehead .pmodels,.panehead .cid,.panehead .pmeta'));
+    targets.forEach(body=>{
+      const walker=document.createTreeWalker(body,NodeFilter.SHOW_TEXT);
+      const nodes=[];
+      while(walker.nextNode())nodes.push(walker.currentNode);
+      nodes.forEach(node=>{
+        const txt=node.nodeValue||'';
+        const ranges=findRanges(txt,convFindTerm,convFindWord);
+        if(!ranges.length)return;
+        const frag=document.createDocumentFragment();
+        let pos=0;
+        ranges.forEach(([hit,end])=>{
+          if(hit>pos)frag.appendChild(document.createTextNode(txt.slice(pos,hit)));
+          const mk=document.createElement('mark');
+          mk.className='cfind';
+          mk.textContent=txt.slice(hit,end);
+          frag.appendChild(mk);
+          convMarks.push(mk);
+          pos=end;
+        });
+        if(pos<txt.length)frag.appendChild(document.createTextNode(txt.slice(pos)));
+        node.parentNode.replaceChild(frag,node);
+      });
+    });
+    if(convMarks.length){
+      convMarkIdx=-1;
+      jumpConversationFind(1);
+    }else{
+      if(cfindPosEl)cfindPosEl.textContent='0/0';
+    }
+    if(convFindFull){
+      let total=0;
+      let hiddenTotal=0;
+      const hiddenEntries=[];
+      current.msg.forEach(m=>{
+        if(isEmptySystem(m))return;
+        const txt=searchText(m);
+        const ranges=findRanges(txt,convFindTerm,convFindWord);
+        if(!ranges.length)return;
+        total+=ranges.length;
+        const isHidden=!visibleMsgSet.has(m);
+        if(isHidden){
+          hiddenTotal+=ranges.length;
+          hiddenEntries.push({
+            when:fmt(m.create_time),
+            role:role(m),
+            mdl:model(m),
+            count:ranges.length,
+            text:txt||'[empty]'
+          });
+        }
+      });
+      if(cfindPosEl){
+        if(total===0)cfindPosEl.textContent='0/0';
+        else if(convMarks.length===0)cfindPosEl.textContent=`(${total} hidden)`;
+        else if(total===convMarks.length)cfindPosEl.textContent=`${convMarkIdx+1}/${total}`;
+        else cfindPosEl.textContent=`${convMarkIdx+1}/${convMarks.length} vis, ${total} total`;
+      }
+      if(cfindHiddenEl&&hiddenEntries.length){
+        const details=hiddenEntries.map((h,i)=>
+          `#${i+1} [${h.when}] ${h.role}${h.mdl?` ${h.mdl}`:''} | ${h.count} hit${h.count===1?'':'s'}\n${h.text}`
+        ).join('\n\n-----\n\n');
+        cfindHiddenEl.style.display='block';
+        cfindHiddenEl.textContent=`hidden hits details (${hiddenEntries.length} entries, ${hiddenTotal} hidden hits):\n\n${details}`;
+      }else if(cfindHiddenEl&&total>0&&convMarks.length===0){
+        cfindHiddenEl.style.display='block';
+        cfindHiddenEl.textContent='hits exist, but none are currently rendered in visible message segments.';
+      }
+    }
+    saveSettings();
+  };
+  const getFiltered=()=>{
+    let filtered=[...store];
+    const rawQ=(searchTerm||'').trim();
+    const q=rawQ.toLowerCase();
+    const quick=q.match(/^([mt])\/(.+)$/);
+    const fromSec=toStartSec(dateFrom);
+    const toSec=toEndSec(dateTo);
+    if(q){
+      filtered=filtered.filter(c=>{
+        if(filters.titleonly)return matches(c.title.toLowerCase(),q);
+        if(quick){
+          const type=quick[1],term=quick[2].trim();
+          if(!term)return true;
+          if(type==='m')return c.models.some(m=>m.toLowerCase().includes(term));
+          return conversationTags(c).some(t=>t.toLowerCase().includes(term));
+        }
+        if(matches(c.title.toLowerCase(),q))return true;
+        if(matches(c.models.join(' ').toLowerCase(),q))return true;
+        if(matches(conversationTags(c).join(' ').toLowerCase(),q))return true;
+        const entries=buildEntries(c);
+        return entries.some(e=>{
+          if(e.type==='compact')return matches(e.text.toLowerCase(),q);
+          return matches(searchText(e.m).toLowerCase(),q);
+        });
+      });
+    }
+    if(tagFilter){
+      if(tagFilter==='__none__'){
+        filtered=filtered.filter(c=>conversationTags(c).length===0);
+      }else{
+      filtered=filtered.filter(c=>{
+        const t=conversationTags(c);
+        if(tagFilterMode==='only')return t.length===1&&t[0]===tagFilter;
+        return t.includes(tagFilter);
+      });
+      }
+    }
+    if(tagFilters.length){
+      filtered=filtered.filter(c=>{
+        const t=conversationTags(c);
+        if(tagFilterMode==='all')return tagFilters.every(x=>t.includes(x));
+        if(tagFilterMode==='only')return t.length===tagFilters.length&&tagFilters.every(x=>t.includes(x));
+        return tagFilters.some(x=>t.includes(x));
+      });
+    }
+    if(onlyFav)filtered=filtered.filter(c=>!!favorites[c.id]);
+    if(fromSec!=null||toSec!=null){
+      filtered=filtered.filter(c=>{
+        const t=dateField==='create'?c.create:c.update;
+        if(fromSec!=null&&t<fromSec)return false;
+        if(toSec!=null&&t>toSec)return false;
+        return true;
+      });
+    }
+    filtered.sort((a,b)=>{
+      switch(sortSel.value){
+        case'cdesc':return b.create-a.create;
+        case'casc':return a.create-b.create;
+        case'uasc':return a.update-b.update;
+        default:return b.update-a.update;
+      }
+    });
+    return filtered;
+  };
+  const setActiveRow=(id,scroll=false)=>{
+    list.querySelectorAll('.conv.active').forEach(n=>n.classList.remove('active'));
+    const row=Array.from(list.querySelectorAll('.conv')).find(n=>n.dataset.id===id);
+    if(!row)return;
+    row.classList.add('active');
+    if(scroll)row.scrollIntoView({block:'nearest'});
+  };
+  const updateNav=()=>{
+    const filtered=getFiltered();
+    if(!filtered.length){
+      prevBtn.disabled=true;nextBtn.disabled=true;pos.textContent='0/0';
+      return;
+    }
+    const idx=current?filtered.findIndex(c=>c.id===current.id):-1;
+    prevBtn.disabled=idx<=0;
+    nextBtn.disabled=idx<0||idx>=filtered.length-1;
+    pos.textContent=idx>=0?`${idx+1}/${filtered.length}`:`-/${filtered.length}`;
+  };
+  const nav=step=>{
+    const filtered=getFiltered();
+    if(!filtered.length)return;
+    let idx=current?filtered.findIndex(c=>c.id===current.id):-1;
+    if(idx<0)idx=step>0?-1:0;
+    const target=filtered[Math.min(filtered.length-1,Math.max(0,idx+step))];
+    if(!target)return;
+    open(target);
+    setActiveRow(target.id,true);
+  };
+
+  const renderList=()=>{
+    listItems.innerHTML='';
+    const filtered=getFiltered();
+    filtered.forEach(c=>{
+      const div=document.createElement('div');
+      div.className='conv';
+      if(current&&current.id===c.id)div.classList.add('active');
+      div.dataset.id=c.id;
+      const tgs=conversationTags(c);
+      div.innerHTML=`<div class="row"><button class="favbtn ${favorites[c.id]?'on':''}" type="button" title="favorite">${favorites[c.id]?'★':'☆'}</button><div class="title">${esc(c.title)}</div></div><div class="meta"><span>upd ${fmt(c.update)}</span><span>cre ${fmt(c.create)}</span></div><div class="mlist">${c.models.length?`models: ${c.models.map(m=>`<button class="ibtn modellink" data-model="${esc(m)}" type="button">${esc(m)}</button>`).join(' ')}`:'models: (none)'}</div>${tgs.length?`<div class="tlist">tags: ${tgs.map(t=>`<button class="ibtn taglink" data-tag="${esc(t)}" type="button">${esc(t)}</button>`).join(' ')}</div>`:''}`;
+      div.querySelectorAll('.modellink').forEach(btn=>btn.onclick=e=>{
+        e.stopPropagation();
+        const m=btn.dataset.model||'';
+        searchTerm=`m/${m}`;
+        searchBox.value=searchTerm;
+        renderList();
+        saveSettings();
+      });
+      div.querySelectorAll('.taglink').forEach(btn=>btn.onclick=e=>{
+        e.stopPropagation();
+        tagFilter=btn.dataset.tag||'';
+        tagFilters=[];
+        tagMultiSel.selectedIndex=-1;
+        tagPick.value=tagFilter;
+        renderList();
+        saveSettings();
+      });
+      div.querySelector('.favbtn').onclick=e=>{
+        e.stopPropagation();
+        if(favorites[c.id])delete favorites[c.id];else favorites[c.id]=true;
+        renderList();
+        if(current&&current.id===c.id)open(c);
+        saveSettings();
+      };
+      div.onclick=()=>{
+        open(c);
+        setActiveRow(c.id);
+      };
+      listItems.appendChild(div);
+    });
+    if(!filtered.length)listItems.innerHTML='<div class="empty">no match</div>';
+    updateNav();
+  };
+
+  $('#file').onchange=e=>{
+    const f=e.target.files[0];
+    if(!f)return;
+    f.text().then(t=>parseAndLoad(t,true)).catch(()=>set('parse err'));
+  };
+  dataImpBtn.onclick=()=>dataFile.click();
+  dataFile.onchange=e=>{
+    const f=e.target.files[0];
+    if(!f)return;
+    f.text().then(t=>{
+      importSettingsObject(JSON.parse(t));
+    }).catch(()=>set('import failed'));
+    dataFile.value='';
+  };
+  dataExpBtn.onclick=()=>{
+    try{
+      const payload=settingsSnapshot();
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='conversation_viewer_settings.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      set('exported settings data');
+    }catch{
+      set('export failed');
+    }
+  };
+
+  document.addEventListener('dragover',e=>e.preventDefault());
+  document.addEventListener('drop',e=>{
+    e.preventDefault();
+    const f=e.dataTransfer.files[0];
+    if(!f)return;
+    f.text().then(t=>parseAndLoad(t,true)).catch(()=>set('parse err'));
+  });
+
+  ['sys','tool','reason','code','hide'].forEach(id=>$('#'+id).onchange=e=>{filters[id]=e.target.checked;if(current)open(current);saveSettings();});
+  ['hideprompts','compact'].forEach(id=>$('#'+id).onchange=e=>{filters[id]=e.target.checked;if(current)open(current);saveSettings();});
+  modelsBox.addEventListener('change',e=>{const md=e.target?.dataset?.model;if(!md)return;modelFilters[md]=e.target.checked;if(current)open(current);saveSettings();});
+
+  wordChk.onchange=e=>{filters.word=e.target.checked;renderList();saveSettings();};
+  titleOnlyChk.onchange=e=>{filters.titleonly=e.target.checked;renderList();saveSettings();};
+  rawToolChk.onchange=e=>{rawToolSearch=e.target.checked;renderList();if(current)open(current);saveSettings();};
+  tagPick.onchange=e=>{tagFilter=e.target.value||'';tagFilters=[];tagMultiSel.selectedIndex=-1;renderList();saveSettings();};
+  tagModeSel.onchange=e=>{
+    const v=e.target.value;
+    tagFilterMode=(v==='all'||v==='only')?v:'any';
+    renderList();
+    saveSettings();
+  };
+  tagMultiSel.onchange=()=>{tagFilters=Array.from(tagMultiSel.selectedOptions).map(o=>o.value).filter(Boolean);if(tagFilters.length){tagFilter='';tagPick.value='';}renderList();saveSettings();};
+  const runClearFilters=()=>{
+    searchTerm='';
+    searchBox.value='';
+    tagFilter='';
+    tagFilters=[];
+    tagPick.value='';
+    Array.from(tagMultiSel.options).forEach(o=>o.selected=false);
+    onlyFav=false;
+    onlyFavChk.checked=false;
+    dateField='update';
+    dateFrom='';
+    dateTo='';
+    dateFieldSel.value=dateField;
+    dateFromInp.value='';
+    dateToInp.value='';
+    renderList();
+    saveSettings();
+    set('view reset');
+  };
+  clearViewBtn.onclick=runClearFilters;
+  clearViewTopBtn.onclick=runClearFilters;
+  bulkAddBtn.onclick=()=>{
+    const tag=(bulkTagInp.value||'').trim().slice(0,TAG_MAX);
+    if(!tag){set('enter a tag first');return;}
+    const chats=getFiltered();
+    chats.forEach(c=>{tagsById[c.id]=normalizeTags([...(tagsById[c.id]||[]),tag]);});
+    renderTagFilter();
+    renderList();
+    if(current)open(current);
+    saveSettings();
+    set(`tag added to ${chats.length} chats`);
+  };
+  bulkRemBtn.onclick=()=>{
+    const tag=(bulkTagInp.value||'').trim().slice(0,TAG_MAX);
+    if(!tag){set('enter a tag first');return;}
+    const chats=getFiltered();
+    chats.forEach(c=>{tagsById[c.id]=normalizeTags((tagsById[c.id]||[]).filter(t=>t!==tag));});
+    renderTagFilter();
+    renderList();
+    if(current)open(current);
+    saveSettings();
+    set(`tag removed from ${chats.length} chats`);
+  };
+  tagMgrToggleBtn.onclick=()=>{setTagManagerOpen(!tagMgrOpen);saveSettings();};
+  tagMgrRenameBtn.onclick=()=>{
+    const src=tagMgrSrcSel.value||'';
+    const dst=(tagMgrRenameInp.value||'').trim().slice(0,TAG_MAX);
+    if(!src){set('choose a source tag');return;}
+    if(!dst){set('enter a new tag name');return;}
+    if(src===dst){set('source and destination are the same');return;}
+    let touched=0;
+    store.forEach(c=>{
+      const cur=tagsById[c.id]||[];
+      if(!cur.includes(src))return;
+      tagsById[c.id]=normalizeTags(cur.map(t=>t===src?dst:t));
+      touched++;
+    });
+    tagMgrRenameInp.value='';
+    normalizeActiveTagFilters();
+    renderTagFilter();
+    renderList();
+    if(current)open(current);
+    saveSettings();
+    set(`renamed tag in ${touched} chats`);
+  };
+  tagMgrMergeBtn.onclick=()=>{
+    const src=tagMgrSrcSel.value||'';
+    const dst=tagMgrDstSel.value||'';
+    if(!src){set('choose a source tag');return;}
+    if(!dst){set('choose a merge target');return;}
+    if(src===dst){set('source and destination are the same');return;}
+    let touched=0;
+    store.forEach(c=>{
+      const cur=tagsById[c.id]||[];
+      if(!cur.includes(src))return;
+      tagsById[c.id]=normalizeTags(cur.map(t=>t===src?dst:t));
+      touched++;
+    });
+    normalizeActiveTagFilters();
+    renderTagFilter();
+    renderList();
+    if(current)open(current);
+    saveSettings();
+    set(`merged tag in ${touched} chats`);
+  };
+  tagMgrDelBtn.onclick=()=>{
+    const src=tagMgrSrcSel.value||'';
+    if(!src){set('choose a source tag');return;}
+    let touched=0;
+    store.forEach(c=>{
+      const cur=tagsById[c.id]||[];
+      if(!cur.includes(src))return;
+      tagsById[c.id]=normalizeTags(cur.filter(t=>t!==src));
+      touched++;
+    });
+    normalizeActiveTagFilters();
+    renderTagFilter();
+    renderList();
+    if(current)open(current);
+    saveSettings();
+    set(`deleted tag from ${touched} chats`);
+  };
+  searchBox.oninput=e=>{searchTerm=e.target.value.toLowerCase();renderList();saveSettings();};
+  sortSel.onchange=()=>{renderList();saveSettings();};
+  dateFieldSel.onchange=e=>{dateField=e.target.value;renderList();saveSettings();};
+  dateFromInp.onchange=e=>{dateFrom=e.target.value||'';renderList();saveSettings();};
+  dateToInp.onchange=e=>{dateTo=e.target.value||'';renderList();saveSettings();};
+  onlyFavChk.onchange=e=>{onlyFav=e.target.checked;renderList();saveSettings();};
+  prevBtn.onclick=()=>nav(-1);
+  nextBtn.onclick=()=>nav(1);
+  focusBtn.onclick=()=>{setFocusMode(!focusMode);saveSettings();};
+  footerToggle.onclick=()=>{setFooterCollapsed(!footerCollapsed);saveSettings();};
+  moreBtn.onclick=()=>{setAdvancedOpen(!advancedOpen);saveSettings();};
+  splitter.onmousedown=e=>{
+    e.preventDefault();
+    const rect=main.getBoundingClientRect();
+    const onMove=ev=>{
+      const max=Math.max(260,rect.width-260);
+      listWidth=Math.max(220,Math.min(max,ev.clientX-rect.left));
+      applyListWidth();
+    };
+    const onUp=()=>{
+      window.removeEventListener('mousemove',onMove);
+      window.removeEventListener('mouseup',onUp);
+      saveSettings();
+    };
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+  };
+  pane.addEventListener('click',e=>{
+    const idx=e.target?.dataset?.idx;
+    if(idx==null||!current)return;
+    const entry=buildEntries(current)[Number(idx)];
+    if(!entry||entry.type!=='msg')return;
+    copyText(bodyText(entry.m.content)||'').then(()=>set('copied message')).catch(()=>set('copy failed'));
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    const tag=(e.target?.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select'||e.target?.isContentEditable)return;
+    if(e.key==='j'||e.key==='ArrowDown'){e.preventDefault();nav(1);}
+    if(e.key==='k'||e.key==='ArrowUp'){e.preventDefault();nav(-1);}
+  });
   document.addEventListener('click',e=>{if(e.target.classList.contains('collapsed'))e.target.classList.remove('collapsed');},false);
+
+  ['sys','tool','reason','code','hide','hideprompts','compact'].forEach(id=>$('#'+id).checked=!!filters[id]);
+  wordChk.checked=!!filters.word;
+  titleOnlyChk.checked=!!filters.titleonly;
+  rawToolChk.checked=!!rawToolSearch;
+  tagPick.value=tagFilter;
+  tagModeSel.value=tagFilterMode;
+  if(saved.sort&&['udesc','uasc','cdesc','casc'].includes(saved.sort))sortSel.value=saved.sort;
+  dateFieldSel.value=dateField;
+  dateFromInp.value=dateFrom;
+  dateToInp.value=dateTo;
+  onlyFavChk.checked=onlyFav;
+  searchBox.value=searchTerm;
+  applyListWidth();
+  setFocusMode(focusMode);
+  setFooterCollapsed(footerCollapsed);
+  setAdvancedOpen(advancedOpen);
+  setTagManagerOpen(tagMgrOpen);
+  restoreLastJson();
 })();
 </script>
 </body>
