@@ -2,7 +2,7 @@
 
 A single-file, local-first viewer for large ChatGPT `conversations.json` exports.
 
-This project is designed for offline/private use in your browser, with fast filtering, model controls, tags/notes, and better export tools for real-world archive cleanup.
+This project is designed for offline/private use in your browser, with fast filtering, model controls, tags/notes, and better export tools for real-world archive cleanup. It was forked off of [https://github.com/rawunfilteredchaos/ChatGPTExportViewer](https://github.com/rawunfilteredchaos/ChatGPTExportViewer) to add addtional features, including tags and notes. Beyond the orginal forked HTML file, all programming was done by ChatGPT-5.3-Codex.
 
 ## What It Does
 
